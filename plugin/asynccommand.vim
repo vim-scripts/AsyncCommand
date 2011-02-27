@@ -67,7 +67,7 @@ if has("win32")
 else
     " Works in linux (Ubuntu 10.04)
     function! <SID>Async_Impl(tool_cmd, vim_cmd)
-        silent exec "! ".a:tool_cmd." ; ".a:vim_cmd." &"
+        silent exec "! (".a:tool_cmd." ; ".a:vim_cmd.") &"
     endfunction
 endif
 
@@ -103,6 +103,16 @@ endfunction
 " Grep
 "   - open result in quickfix
 function! AsyncGrep(query)
+    " Valid queries require two items. 
+    " We could also search for that item in the current file, but console grep
+    " reads stdin, :grep does nothing, and :vimgrep errors. And we'd have to
+    " special case when the buffer has no file.
+    " We're consistent instead of convenient.
+    if len(split(a:query, '\s')) < 2
+        echoerr "Invalid input: missing filename or pattern."
+        return
+    endif
+
     let grep_cmd = "grep --line-number --with-filename ".a:query
     let vim_func = "OnCompleteGetAsyncGrepResults"
 
@@ -163,7 +173,7 @@ function! AsyncCscopeFindX(input)
     try
         let type_num = s:type_char_to_num[ a:input[ type ] ]
     catch /Key not present in Dictionary/
-        echo "Error: " . type . " is an invalid find query. See :cscope help"
+        echoerr "Error: " . type . " is an invalid find query. See :cscope help"
         return
     endtry
 
