@@ -1,0 +1,135 @@
+*asynccommand.txt*	Plug-in for running asynchronous shell commands.
+
+==============================================================================
+
+                                                                *asynccommand*
+Introduction~
+
+AsyncCommand allows you to execute shell commands without waiting for them 
+to complete. When the application terminates, its output can be loaded into 
+a vim buffer.
+
+You can define your own commands by following the same format:
+Define a launch function that passes the external command and result handler
+(like asynchandler#quickfix) to asynccommand#run. You can use the handlers in
+autoload/asynchandler.vim or define your own.
+
+						   *asynccommand-requirements*
+AsyncCommand Requirements~
+
+AsyncCommand needs vim compiled with |+clientserver|. Check your vim version
+with |:version|.
+
+						       *asynccommand-commands*
+Commands~
+
+:AsyncCommand {cmd}					       *:AsyncCommand*
+		Execute shell {cmd} in the background.
+
+:AsyncShell {cmd}					         *:AsyncShell*
+                Execute shell {cmd} in the background. When it completes, open
+                the result in a split window.
+
+						      *asynccommand-functions*
+Functions~
+
+asynccommand#run({command} [, {function}[, {dict}]])        *asynccommand#run*
+		Execute a shell {command} in the background.
+		After the command is executed {function} can will be called.
+		{function} can be either:
+		|Funcref|
+			A Function ref
+		|Dictionary|
+			A dictionary with a |Dictionary-function| named key
+			named 'get'.
+
+		The {dict} argument can be supplied to be used to call with
+		the {function}. This the same as using the third argument to
+		|call()|.
+
+		The {function} will be of the following form:
+		some_function(temp_name)
+
+		temp_name will be the name of temporary file used to capture
+		the output of the {command}.
+
+		Examples: >
+
+		command! GenerateCscopeFiles call GenerateCscopeFiles()
+		function! GenerateCscopeFiles()
+		    let cmd = 'find . -name "*.java"'
+		    let env = asynchandler#rename('cscope.files')
+		    call asynccommand#run(cmd, env)
+		endfunction
+
+		command! -nargs=+ Ack call AckFunc(<q-args>)
+		function! AckFunc(query)
+		    let cmd = 'ack -H --nocolor --nogroup --column '
+		    let cmd .= a:query
+		    let efm = "%f:%l:%c:%m"
+		    let title = "[Found: %s] Ack"
+		    let env = asynchandler#quickfix(efm, title)
+		    call asynccommand#run(cmd, env)
+		endfunction
+
+		command! -nargs=1 AntBuild call AntBuildFunc(<q-args>)
+		function! AntBuildFunc(target)
+		    let cmd = 'ant '
+		    let cmd .= a:target
+		    let env = {}
+		    function env.get(temp_file) dict
+			" open the file in a split
+			exec "split " . a:temp_file
+			" remove boring build output
+			%s/^\[xslt\].*$/
+			" go back to the previous window
+			wincmd p
+		    endfunction
+
+		    " tab_restore prevents interruption when the task completes.
+		    " All provided asynchandlers already use tab_restore.
+		    call asynccommand#run(cmd, asynccommand#tab_restore(env))
+		endfunction
+<
+
+                             *asynccommand-callbacks* *asynccommand-handlers*
+Common Callbacks~
+
+asynchandler#rename({path})                             *asynchandler#rename*
+		Rename the temp_file to {path} after the background command
+		has been executed.
+
+asynchandler#quickfix({errorformat}, {title})         *asynchandler#quickfix*
+		Open the results in |quickfix-window| using {errorformat} as
+		the 'errorformat'. A {title} can be provided to give the
+		quickfix-window, similar to |w:quickfix_title|. Put %s into
+		the {title} to have it replaced with the number of results.
+
+asynchandler#quickfix_add({errorformat}, {title}) *asynchandler#quickfix_add*
+		Same as |asynchandler#quickfix| but results will be added.
+
+asynchandler#loclist({errorformat}, {title})           *asynchandler#loclist*
+		Same as |asynchandler#quickfix| but use the |location-list|.
+
+asynchandler#loclist_add({errorformat}, {title})   *asynchandler#loclist_add*
+		Same as |asynchandler#quickfix_add| but use the
+		|location-list|.
+
+asynchandler#split()                                     *asynchandler#split*
+		Open the results of the asynchronous shell command in a new
+		split.
+
+==============================================================================
+
+						  *asynchronous-configuration*
+Configuration~
+
+g:asynccommand_prg                                        *g:asynccommand_prg*
+		Override the default path to vim to be used by AsyncCommand to
+		capture data from backgrounded commands.  AsyncCommand is
+		compatible with |macvim| and will use mvim if it is available.
+		See |mvim| for setup.
+
+==============================================================================
+
+ vim:tw=78:ts=8:ft=help:norl:
