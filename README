@@ -7,10 +7,12 @@ Linux (tested on Win7 and Ubuntu 11.04).
 
 Currently three types of commands are supported: 
 
-AsyncGrep
-    grep for files and load results in quickfix 
 AsyncShell
     run any program and load results in a split 
+AsyncGrep
+    grep for files and load results in quickfix 
+AsyncMake
+    run make and load results in quickfix
 AsyncCscopeFindSymbol, AsyncCscopeFindCalls, AsyncCscopeFindX 
     cscope commands
 
