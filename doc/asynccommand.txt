@@ -78,12 +78,17 @@ asynccommand#run({command} [, {function}[, {dict}]])        *asynccommand#run*
 		    let cmd .= a:target
 		    let env = {}
 		    function env.get(temp_file) dict
-			" open the file in a split
-			exec "split " . a:temp_file
-			" remove boring build output
-			%s/^\[xslt\].*$/
-			" go back to the previous window
-			wincmd p
+		        let h = ''
+		        if self.return_code == 0
+		            " use tiny split window height on success
+		            let h = 1
+		        endif
+		        " open the file in a split
+		        exec h . "split " . a:temp_file
+		        " remove boring build output
+		        %s/^\[xslt\].*$/
+		        " go back to the previous window
+		        wincmd p
 		    endfunction
 
 		    " tab_restore prevents interruption when the task completes.
@@ -121,7 +126,7 @@ asynchandler#split()                                     *asynchandler#split*
 
 ==============================================================================
 
-						  *asynchronous-configuration*
+						  *asynccommand-configuration*
 Configuration~
 
 g:asynccommand_prg                                        *g:asynccommand_prg*
@@ -129,6 +134,17 @@ g:asynccommand_prg                                        *g:asynccommand_prg*
 		capture data from backgrounded commands.  AsyncCommand is
 		compatible with |macvim| and will use mvim if it is available.
 		See |mvim| for setup.
+
+shellredir                                           *asynccommand-shellredir*
+		You may find it useful to change vim's |shellredir| setting to
+		use tee (which writes to a file, but also to stdout). On
+		MS-Windows, this will allow you to see the output of the
+		command in the opened command window.
+>
+		" redirect to both standard output and files
+		set shellredir=2>&1\|tee\ %s
+<
+
 
 ==============================================================================
 
